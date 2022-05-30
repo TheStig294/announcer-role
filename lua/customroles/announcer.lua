@@ -24,18 +24,20 @@ if SERVER then
         net.Start("AnnouncerItemBought")
         net.WriteString(equipment)
         net.WriteBool(tobool(is_item))
+        net.WriteString(ROLE_STRINGS_EXT[ply:GetRole()] or "a player")
         net.Send(ply)
     end)
 
     net.Receive("AnnouncerItemNameFound", function(len, boughtPly)
         local printName = net.ReadString()
+        local role = net.ReadString()
 
         for _, ply in ipairs(player.GetAll()) do
             -- Don't tell an announcer about their own bought items
             if boughtPly == ply then continue end
 
             if ply:IsAnnouncer() and ply:Alive() and not ply:IsSpec() then
-                local message = ROLE_STRINGS_EXT[ply:GetRole()] .. " bought a " .. printName .. "!"
+                local message = role .. " bought a " .. printName .. "!"
                 message = string.upper(message[1]) .. string.Right(message, #message - 1)
                 ply:PrintMessage(HUD_PRINTTALK, message)
 
@@ -48,16 +50,7 @@ if SERVER then
 
     -- Prints a message to all shop roles at the start of a round, telling them there is an announcer
     hook.Add("TTTBeginRound", "AnnouncerAlertMessage", function()
-        local isAnnouncer = false
-
-        for _, ply in ipairs(player.GetAll()) do
-            if ply:IsAnnouncer() then
-                isAnnouncer = true
-                break
-            end
-        end
-
-        if isAnnouncer then
+        if player.IsRoleLiving(ROLE_ANNOUNCER) then
             for _, ply in ipairs(player.GetAll()) do
                 if SHOP_ROLES[ply:GetRole()] then
                     ply:PrintMessage(HUD_PRINTTALK, "There is an Announcer")
@@ -72,6 +65,7 @@ if CLIENT then
     net.Receive("AnnouncerItemBought", function()
         local equipment = net.ReadString()
         local is_item = net.ReadBool()
+        local role = net.ReadString()
         local printName = equipment
 
         -- Passive item name getting
@@ -95,6 +89,7 @@ if CLIENT then
 
         net.Start("AnnouncerItemNameFound")
         net.WriteString(printName)
+        net.WriteString(role)
         net.SendToServer()
     end)
 
