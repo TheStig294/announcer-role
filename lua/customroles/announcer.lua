@@ -10,7 +10,16 @@ ROLE.team = ROLE_TEAM_DETECTIVE
 ROLE.shop = {}
 ROLE.loadout = {}
 ROLE.startingcredits = 1
-ROLE.convars = {}
+
+CreateConVar("ttt_announcer_show_role", 1, {FCVAR_NOTIFY}, "Whether or not to show the role of an item-purchasing player")
+
+ROLE.convars = {
+    {
+        cvar = "ttt_announcer_show_role",
+        type = ROLE_CONVAR_TYPE_BOOL
+    }
+}
+
 RegisterRole(ROLE)
 
 if SERVER then
@@ -20,11 +29,17 @@ if SERVER then
     -- Displays the message any announcer sees when someone buys an item
     hook.Add("TTTOrderedEquipment", "AnnouncerItemBought", function(ply, equipment, is_item, is_from_randomat)
         -- Don't tell the announcer about items recieved from randomats
-        if is_from_randomat and Randomat and type(Randomat.IsInnocentTeam) == "function" then return end
+        if (not player.IsRoleLiving(ROLE_ANNOUNCER)) or (is_from_randomat and Randomat and type(Randomat.IsInnocentTeam) == "function") then return end
+        local role = "someone"
+
+        if GetConVar("ttt_announcer_show_role"):GetBool() then
+            role = ROLE_STRINGS_EXT[ply:GetRole()]
+        end
+
         net.Start("AnnouncerItemBought")
         net.WriteString(equipment)
         net.WriteBool(tobool(is_item))
-        net.WriteString(ROLE_STRINGS_EXT[ply:GetRole()] or "a player")
+        net.WriteString(role)
         net.Send(ply)
     end)
 
@@ -38,7 +53,8 @@ if SERVER then
 
             if ply:IsAnnouncer() and ply:Alive() and not ply:IsSpec() then
                 local message = role .. " bought a " .. printName .. "!"
-                message = string.upper(message[1]) .. string.Right(message, #message - 1)
+                -- Capitalising the first letter of the message
+                message = string.SetChar(message, 1, string.upper(message[1]))
                 ply:PrintMessage(HUD_PRINTTALK, message)
 
                 timer.Create("AnnouncerMessageRepeat", 1, 5, function()
@@ -52,7 +68,7 @@ if SERVER then
     hook.Add("TTTBeginRound", "AnnouncerAlertMessage", function()
         if player.IsRoleLiving(ROLE_ANNOUNCER) then
             for _, ply in ipairs(player.GetAll()) do
-                if SHOP_ROLES[ply:GetRole()] then
+                if SHOP_ROLES[ply:GetRole()] and ply:GetRole() ~= ROLE_ANNOUNCER then
                     ply:PrintMessage(HUD_PRINTTALK, "There is an Announcer")
                     ply:PrintMessage(HUD_PRINTCENTER, "There is an Announcer")
                 end
