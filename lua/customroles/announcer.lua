@@ -11,7 +11,7 @@ ROLE.shop = {}
 ROLE.loadout = {}
 ROLE.startingcredits = 1
 
-CreateConVar("ttt_announcer_show_role", 1, {FCVAR_NOTIFY}, "Whether or not to show the role of an item-purchasing player")
+CreateConVar("ttt_announcer_show_role", 0, {FCVAR_NOTIFY}, "Whether or not to show the role of an item-purchasing player")
 
 ROLE.convars = {
     {
@@ -28,7 +28,7 @@ if SERVER then
 
     -- Displays the message any announcer sees when someone buys an item
     hook.Add("TTTOrderedEquipment", "AnnouncerItemBought", function(ply, equipment, is_item, is_from_randomat)
-        -- Don't tell the announcer about items recieved from randomats
+        -- Don't tell the announcer about items received from randomats
         if (not player.IsRoleLiving(ROLE_ANNOUNCER)) or (is_from_randomat and Randomat and type(Randomat.IsInnocentTeam) == "function") then return end
         local role = "someone"
 
@@ -52,12 +52,18 @@ if SERVER then
             if boughtPly == ply then continue end
 
             if ply:IsAnnouncer() and ply:Alive() and not ply:IsSpec() then
+                -- Don't include the player's role if an impersonator or deputy is in the round
+                if player.IsRoleLiving(ROLE_DEPUTY) or player.IsRoleLiving(ROLE_IMPERSONATOR) then
+                    role = "someone"
+                end
+
                 local message = role .. " bought a " .. printName .. "!"
                 -- Capitalising the first letter of the message
                 message = string.SetChar(message, 1, string.upper(message[1]))
                 ply:PrintMessage(HUD_PRINTTALK, message)
+                ply:PrintMessage(HUD_PRINTCENTER, message)
 
-                timer.Create("AnnouncerMessageRepeat", 1, 5, function()
+                timer.Simple(2, function()
                     ply:PrintMessage(HUD_PRINTCENTER, message)
                 end)
             end
