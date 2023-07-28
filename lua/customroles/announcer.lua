@@ -115,6 +115,12 @@ if CLIENT then
         net.SendToServer()
     end)
 
+    local function HandleReplicatedValue(onreplicated, onglobal)
+        if isfunction(CRVersion) and CRVersion("1.9.3") then return onreplicated() end
+
+        return onglobal()
+    end
+
     hook.Add("TTTTutorialRoleText", "AnnouncerTutorialRoleText", function(role, titleLabel, roleIcon)
         if role == ROLE_ANNOUNCER then
             local roleColor = ROLE_COLORS[ROLE_INNOCENT]
@@ -125,7 +131,8 @@ if CLIENT then
             html = html .. "Players that are able to buy items are <span style='color: rgb(" .. detectiveColor.r .. ", " .. detectiveColor.g .. ", " .. detectiveColor.b .. ")'>notified at the start of the round</span> that there is an announcer."
             -- Hidden detective stuff
             html = html .. "<span style='display: block; margin-top: 10px;'>Other players will know you are " .. ROLE_STRINGS_EXT[ROLE_DETECTIVE] .. " just by <span style='color: rgb(" .. roleColor.r .. ", " .. roleColor.g .. ", " .. roleColor.b .. ")'>looking at you</span>"
-            local special_detective_mode = GetGlobalInt("ttt_detective_hide_special_mode", SPECIAL_DETECTIVE_HIDE_NONE)
+            -- CR Replicated convar
+            local special_detective_mode = HandleReplicatedValue(function() return GetConVar("ttt_detectives_hide_special_mode"):GetInt() end, function() return GetGlobalInt("ttt_detective_hide_special_mode", SPECIAL_DETECTIVE_HIDE_NONE) end)
 
             if special_detective_mode > SPECIAL_DETECTIVE_HIDE_NONE then
                 html = html .. ", but not what specific type of " .. ROLE_STRINGS[ROLE_DETECTIVE]
