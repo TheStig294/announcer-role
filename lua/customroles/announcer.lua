@@ -28,8 +28,8 @@ if SERVER then
 
     -- Displays the message any announcer sees when someone buys an item
     hook.Add("TTTOrderedEquipment", "AnnouncerItemBought", function(ply, equipment, is_item, is_from_randomat)
-        -- Don't tell the announcer about items received from randomats
-        if (not player.IsRoleLiving(ROLE_ANNOUNCER)) or (is_from_randomat and Randomat and type(Randomat.IsInnocentTeam) == "function") then return end
+        -- Don't tell the announcer about items received from randomats or items bought by announcers
+        if ply:IsAnnouncer() or not player.IsRoleLiving(ROLE_ANNOUNCER) or (is_from_randomat and Randomat and type(Randomat.IsInnocentTeam) == "function") then return end
         local role = "someone"
 
         if GetConVar("ttt_announcer_show_role"):GetBool() then
@@ -48,9 +48,6 @@ if SERVER then
         local role = net.ReadString()
 
         for _, ply in ipairs(player.GetAll()) do
-            -- Don't tell an announcer about their own bought items
-            if boughtPly == ply then continue end
-
             if ply:IsAnnouncer() and ply:Alive() and not ply:IsSpec() then
                 -- Don't include the player's role if an impersonator or deputy is in the round
                 if player.IsRoleLiving(ROLE_DEPUTY) or player.IsRoleLiving(ROLE_IMPERSONATOR) then
