@@ -10,6 +10,7 @@ ROLE.team = ROLE_TEAM_DETECTIVE
 ROLE.shop = {}
 ROLE.loadout = {}
 ROLE.startingcredits = 1
+ROLE.shortdesc = "Notified whenever someone buys an item. Sees the name of the item, but not who it was"
 
 CreateConVar("ttt_announcer_show_role", 0, {FCVAR_NOTIFY}, "Whether or not to show the role of an item-purchasing player")
 
