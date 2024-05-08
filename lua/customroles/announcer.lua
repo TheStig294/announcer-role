@@ -26,11 +26,33 @@ RegisterRole(ROLE)
 if SERVER then
     util.AddNetworkString("AnnouncerItemBought")
     util.AddNetworkString("AnnouncerItemNameFound")
+    local ignoreEquipmentOrders = false
+
+    hook.Add("TTTBeginRound", "AnnouncerBeginRound", function()
+        -- Prints a message to all shop roles at the start of a round, telling them there is an announcer
+        if player.IsRoleLiving(ROLE_ANNOUNCER) then
+            for _, ply in ipairs(player.GetAll()) do
+                if SHOP_ROLES[ply:GetRole()] and ply:GetRole() ~= ROLE_ANNOUNCER then
+                    ply:PrintMessage(HUD_PRINTTALK, "There is an Announcer")
+                    ply:PrintMessage(HUD_PRINTCENTER, "There is an Announcer")
+                end
+            end
+        end
+
+        -- Stops announcers from seeing "Someone bought a body armour" or other loadout items at the start of the round
+        ignoreEquipmentOrders = true
+
+        timer.Simple(1, function()
+            ignoreEquipmentOrders = false
+        end)
+    end)
 
     -- Displays the message any announcer sees when someone buys an item
     hook.Add("TTTOrderedEquipment", "AnnouncerItemBought", function(ply, equipment, is_item, is_from_randomat)
-        -- Don't tell the announcer about items received from randomats or items bought by announcers
-        if ply:IsAnnouncer() or not player.IsRoleLiving(ROLE_ANNOUNCER) or (is_from_randomat and Randomat and type(Randomat.IsInnocentTeam) == "function") then return end
+        -- Ignore loadout items (the first second of each round) and don't bother with this function if there is no announcer to announce to
+        if ignoreEquipmentOrders or not player.IsRoleLiving(ROLE_ANNOUNCER) then return end
+        -- Don't tell the announcer about items received from randomats
+        if is_from_randomat and Randomat and type(Randomat.IsInnocentTeam) == "function" then return end
         local role = "someone"
 
         if GetConVar("ttt_announcer_show_role"):GetBool() then
@@ -49,7 +71,8 @@ if SERVER then
         local role = net.ReadString()
 
         for _, ply in ipairs(player.GetAll()) do
-            if ply:IsAnnouncer() and ply:Alive() and not ply:IsSpec() then
+            -- Do not announce a player's own items
+            if ply:IsAnnouncer() and ply:Alive() and not ply:IsSpec() and ply ~= boughtPly then
                 -- Don't include the player's role if an impersonator or deputy is in the round
                 if player.IsRoleLiving(ROLE_DEPUTY) or player.IsRoleLiving(ROLE_IMPERSONATOR) then
                     role = "someone"
@@ -64,18 +87,6 @@ if SERVER then
                 timer.Simple(2, function()
                     ply:PrintMessage(HUD_PRINTCENTER, message)
                 end)
-            end
-        end
-    end)
-
-    -- Prints a message to all shop roles at the start of a round, telling them there is an announcer
-    hook.Add("TTTBeginRound", "AnnouncerAlertMessage", function()
-        if player.IsRoleLiving(ROLE_ANNOUNCER) then
-            for _, ply in ipairs(player.GetAll()) do
-                if SHOP_ROLES[ply:GetRole()] and ply:GetRole() ~= ROLE_ANNOUNCER then
-                    ply:PrintMessage(HUD_PRINTTALK, "There is an Announcer")
-                    ply:PrintMessage(HUD_PRINTCENTER, "There is an Announcer")
-                end
             end
         end
     end)
